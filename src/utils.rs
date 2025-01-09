@@ -1,28 +1,43 @@
+use std::collections::HashMap;
 
+use sha2::{Digest, Sha256};
 
-fn create_witness_revision() -> Revision {
-    Revision {
-        previous_verification_hash: None,
-        nonce: None,
-        domain_id: None,
-        local_timestamp: None,
-        revision_type: None,
-        file_hash: None,
-        link_type: None,
-        link_require_indepth_verification: None,
-        link_verification_hash: None,
-        link_uri: None,
-        signature: None,
-        signature_public_key: None,
-        signature_wallet_address: None,
-        signature_type: None,
-        witness_merkle_root: None,
-        witness_timestamp: None,
-        witness_network: None,
-        witness_smart_contract_address: None,
-        witness_transaction_hash: None,
-        witness_sender_account_address: None,
-        witness_merkle_proof: None,
-        leaves: Vec::new(),
+/// Helper function to compute SHA-256 hash and return it as a hex string with prefix "1220".
+fn get_hash_sum(content: &str) -> String {
+    if content.is_empty() {
+        return String::new();
     }
+    let mut hasher = Sha256::new();
+    hasher.update(content);
+    format!("{}", hex::encode(hasher.finalize()))
+}
+
+pub fn generate_leaves(verification_data: HashMap<String, String>) -> Vec<String> {
+    // Sort the keys and construct the leaves
+    let mut sorted_keys: Vec<String> = verification_data.keys().cloned().collect();
+    sorted_keys.sort(); // Sort keys alphabetically
+
+    sorted_keys
+        .into_iter()
+        .filter_map(|key| {
+            verification_data
+                .get(&key)
+                .map(|value| get_hash_sum(format!("{}:{}", key, value).as_str()))
+            // Create "key:value"
+        })
+        .collect()
+}
+
+pub fn generate_byte_leaves(leaves: Vec<String>) -> Vec<[u8; 32]> {
+    let _leaves: Vec<[u8; 32]> = leaves
+        .iter()
+        .map(|leaf| {
+            let mut array = [0u8; 32];
+            let bytes = hex::decode(leaf).unwrap_or_default();
+            array.copy_from_slice(&bytes);
+            array
+        })
+        .collect();
+
+    _leaves
 }
